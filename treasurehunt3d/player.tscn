@@ -26,5 +26,4 @@ top_level = true
 transform = Transform3D(1, 0, 0, 0, 0.975292, 0.220919, 0, -0.220919, 0.975292, 0, 3.78447, 8.20882)
 
 [node name="Camera3D" type="Camera3D" parent="CameraController/CameraTarget"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 current = true
