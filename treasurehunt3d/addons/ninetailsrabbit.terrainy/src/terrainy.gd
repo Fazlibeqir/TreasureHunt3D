@@ -296,3 +296,7 @@ func on_terrain_generation_finished() -> void:
 	create_navigation_region(navigation_region)
 	
 #endregion
+
+
+func _on_try_again_button_pressed() -> void:
+	pass # Replace with function body.

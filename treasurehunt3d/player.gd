@@ -3,7 +3,40 @@ extends CharacterBody3D
 
 const SPEED = 5.0
 const JUMP_VELOCITY = 4.5
- 
+const MOUSE_SENSITIVTY = 0.002
+
+@onready var camera_controller = $CameraController
+@onready var camera = $CameraController/CameraTarget/Camera3D
+@onready var anim_player = $CollisionShape3D/Mage/AnimationPlayer 
+@onready var score_label = $"../CanvasLayer/ScoreLabel"
+@onready var timer_label = $"../CanvasLayer/TimerLabel"
+@onready var timer = $Timer
+@onready var game_over_screen = $"../CanvasLayer/GameOverScreen"
+@onready var game_over_label = $"../CanvasLayer/GameOverScreen/GameOverLabel"
+@onready var try_again_button = $"../CanvasLayer/GameOverScreen/TryAgainButton"
+
+
+var yaw = 0
+var pitch = 0
+var score = 0
+var time_left = 2
+
+func _ready() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	update_score()
+	update_timer()
+	timer.start()
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		yaw -= event.relative.x * MOUSE_SENSITIVTY
+		pitch -= event.relative.y * MOUSE_SENSITIVTY
+		pitch = clamp(pitch, -0.4, 0.4)
+		
+		camera_controller.rotation_degrees.y = rad_to_deg(yaw)
+		camera.rotation_degrees.x = rad_to_deg(pitch)
+		
+
 
 func _physics_process(delta: float) -> void:
 	
@@ -14,19 +47,49 @@ func _physics_process(delta: float) -> void:
 	# Handle jump.
 	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
+		anim_player.play("Jump_Full_Short")
 
 	# Get the input direction and handle the movement/deceleration.
 	# As good practice, you should replace UI actions with custom gameplay actions.
 	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	if direction:
+	var forward = camera_controller.transform.basis.z
+	var right = camera_controller.transform.basis.x
+	
+	var direction = (right * input_dir.x + forward * input_dir.y).normalized()
+	if direction != Vector3.ZERO:
 		velocity.x = direction.x * SPEED
 		velocity.z = direction.z * SPEED
+		rotation.y = camera_controller.rotation.y
+		anim_player.play("Walking_A")
 	else:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 		velocity.z = move_toward(velocity.z, 0, SPEED)
+		anim_player.play("Idle")
 
 	move_and_slide()
 	
 	#Make Camera Controller Match the position of the player
-	$CameraController.position = lerp($CameraController.position, position, 0.15)
+	camera_controller.position = lerp(camera_controller.position, position, 0.15)
+
+func update_score():
+	score_label.text = "Score: " + str(score)
+
+func update_timer():
+	timer_label.text = "Time Left: " + str(time_left)
+
+func _on_timer_timeout():
+	time_left -=1
+	update_timer()
+	if time_left <= 0:
+		game_over()
+
+func game_over():
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	game_over_screen.visible = true  # Show the UI
+	if score >= 100:
+		game_over_label.text = "You Win!"
+	else:
+		game_over_label.text = "Game Over!"
+
+func _on_try_again_button_pressed():
+	get_tree().reload_current_scene()
