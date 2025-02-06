@@ -21,11 +21,12 @@ const BONUS_POINTS = 20  # Bonus points for specific actions
 var yaw = 0
 var pitch = 0
 var score = 0
-var time_left = 3
+var time_left = 120
 var last_action_time = 0.0  # To track time for combos
 var combo_multiplier = 1  # Combo multiplier for consecutive actions
 var current_combo_time = 0.0  # Time elapsed for current combo
 var high_score = 0  # Variable to hold the high score
+var game_over_flag = false  # Flag to track if the game is over
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -35,6 +36,10 @@ func _ready() -> void:
 	timer.start()
 
 func _input(event: InputEvent) -> void:
+	# Disable input if the game is over
+	if game_over_flag:
+		return
+
 	if event is InputEventMouseMotion:
 		yaw -= event.relative.x * MOUSE_SENSITIVTY
 		pitch -= event.relative.y * MOUSE_SENSITIVTY
@@ -44,6 +49,10 @@ func _input(event: InputEvent) -> void:
 		camera.rotation_degrees.x = rad_to_deg(pitch)
 
 func _physics_process(delta: float) -> void:
+	# Disable movement if the game is over
+	if game_over_flag:
+		return
+
 	# Add the gravity
 	if not is_on_floor():
 		velocity += get_gravity() * delta
@@ -96,10 +105,8 @@ func _on_timer_timeout():
 func game_over():
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	game_over_screen.visible = true  # Show the UI
-	if score >= 100:
-		game_over_label.text = "You Win!"
-	else:
-		game_over_label.text = "Game Over!"
+	game_over_flag = true  # Set the game over flag to true
+	game_over_label.text = "Your Score:" + str(score)
 
 	# Check and update high score
 	if score > high_score:
