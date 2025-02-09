@@ -8,10 +8,6 @@
 
 config_version=5
 
-[TreasureHunt3D]
-
-config/ninetailsrabbit.terrainy/update_notification_enabled=true
-
 [application]
 
 config/name="TreasureHunt3D"
