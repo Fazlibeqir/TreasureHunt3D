@@ -17,6 +17,7 @@ const BONUS_POINTS = 20  # Bonus points for specific actions
 @onready var game_over_label = $"../CanvasLayer/GameOverScreen/GameOverLabel"
 @onready var try_again_button = $"../CanvasLayer/GameOverScreen/TryAgainButton"
 @onready var high_score_label = $"../CanvasLayer/GameOverScreen/HighScoreLabel"  # New label for high score
+@onready var main_menu = $"../CanvasLayer/MainMenu"  # Main Menu Control with Start, Leaderboard, and Quit buttons
 
 var yaw = 0
 var pitch = 0
@@ -29,15 +30,21 @@ var high_score = 0  # Variable to hold the high score
 var game_over_flag = false  # Flag to track if the game is over
 
 func _ready() -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	# Update score/timer labels and load saved high score.
 	update_score()
 	update_timer()
 	load_high_score()  # Load the high score when the game starts
-	timer.start()
+	
+	# If the main menu is visible, keep the mouse visible. Otherwise, capture it and start the timer.
+	if main_menu and main_menu.visible:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		timer.start()
 
 func _input(event: InputEvent) -> void:
-	# Disable input if the game is over
-	if game_over_flag:
+	# Disable input if the game is over or if the main menu is active.
+	if game_over_flag or (main_menu and main_menu.visible):
 		return
 
 	if event is InputEventMouseMotion:
@@ -49,21 +56,21 @@ func _input(event: InputEvent) -> void:
 		camera.rotation_degrees.x = rad_to_deg(pitch)
 
 func _physics_process(delta: float) -> void:
-	# Disable movement if the game is over
-	if game_over_flag:
+	# Disable movement if the game is over or if the main menu is active.
+	if game_over_flag or (main_menu and main_menu.visible):
 		return
 
-	# Add the gravity
+	# Add gravity.
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 
-	# Handle jump
+	# Handle jump.
 	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
 		anim_player.play("Jump_Full_Short")
 		increase_score(BASE_POINTS)  # Add points on each jump
 
-	# Get the input direction and handle movement
+	# Get input direction and handle movement.
 	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	var forward = camera_controller.transform.basis.z
 	var right = camera_controller.transform.basis.x
@@ -81,10 +88,10 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	# Make Camera Controller Match the position of the player
+	# Make Camera Controller match the position of the player.
 	camera_controller.position = lerp(camera_controller.position, position, 0.15)
 
-	# Update combo timer
+	# Update combo timer.
 	if current_combo_time < COMBO_TIME_LIMIT:
 		current_combo_time += delta
 	else:
@@ -104,11 +111,11 @@ func _on_timer_timeout():
 
 func game_over():
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	game_over_screen.visible = true  # Show the UI
+	game_over_screen.visible = true  # Show the Game Over UI
 	game_over_flag = true  # Set the game over flag to true
-	game_over_label.text = "Your Score:" + str(score)
+	game_over_label.text = "Your Score: " + str(score)
 
-	# Check and update high score
+	# Check and update high score.
 	if score > high_score:
 		high_score = score
 		save_high_score()  # Save the new high score
@@ -118,7 +125,7 @@ func game_over():
 func _on_try_again_button_pressed():
 	get_tree().reload_current_scene()
 
-# Function to increase score and apply combo multiplier
+# Function to increase score and apply combo multiplier.
 func increase_score(points: int) -> void:
 	if current_combo_time < COMBO_TIME_LIMIT:
 		combo_multiplier += 1  # Increase combo multiplier for consecutive actions
@@ -129,24 +136,38 @@ func increase_score(points: int) -> void:
 	score += final_points
 	update_score()
 
-	# Display combo multiplier on screen
+	# Display combo multiplier on screen.
 	if combo_multiplier > 1:
 		score_label.text += " x" + str(combo_multiplier)
 
-# Function to reset the combo system
+# Function to reset the combo system.
 func reset_combo() -> void:
 	combo_multiplier = 1
 	current_combo_time = 0.0
 
-# Function to load the high score from a file
+# Function to load the high score from a file.
 func load_high_score() -> void:
 	var file = FileAccess.open("user://highscore.dat", FileAccess.READ)
 	if file:
 		high_score = file.get_var()  # Read the high score from the file
 		file.close()
 
-# Function to save the high score to a file
+# Function to save the high score to a file.
 func save_high_score() -> void:
 	var file = FileAccess.open("user://highscore.dat", FileAccess.WRITE)
 	file.store_var(high_score)  # Save the high score to the file
 	file.close()
+
+
+# --- Main Menu Button Signal Functions ---
+# (Connect these functions to the pressed() signals of your Main Menu buttons.)
+
+func _on_StartGameButton_pressed():
+	# Hide the Main Menu and start the game.
+	if main_menu:
+		main_menu.visible = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	timer.start()
+
+func _on_QuitGameButton_pressed():
+	get_tree().quit()

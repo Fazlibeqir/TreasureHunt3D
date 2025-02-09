@@ -300,3 +300,7 @@ func on_terrain_generation_finished() -> void:
 
 func _on_try_again_button_pressed() -> void:
 	pass # Replace with function body.
+
+
+func _on_start_game_pressed() -> void:
+	pass # Replace with function body.
